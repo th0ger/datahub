@@ -249,6 +249,10 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
     password: Optional[str] = Field(
         default=None, description="The password credential."
     )
+    api_key: Optional[str] = Field(
+        default=None,
+        description="API Key authentication. Accepts raw key without 'ApiKey:' prefix and base64 encoding.",
+    )
 
     use_ssl: bool = Field(
         default=False, description="Whether to use SSL for the connection or not."
@@ -327,6 +331,9 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
     def http_auth(self) -> Optional[Tuple[str, str]]:
         return None if self.username is None else (self.username, self.password or "")
 
+    @property
+    def api_key_prefixed(self) -> Optional[Tuple[str, str]]:
+        return None if self.api_key is None else ("ApiKey", self.api_key)
 
 @platform_name("Elasticsearch")
 @config_class(ElasticsearchSourceConfig)
@@ -346,6 +353,7 @@ class ElasticsearchSource(Source):
         self.client = Elasticsearch(
             self.source_config.host,
             http_auth=self.source_config.http_auth,
+            api_key=self.source_config.api_key_prefixed,
             use_ssl=self.source_config.use_ssl,
             verify_certs=self.source_config.verify_certs,
             ca_certs=self.source_config.ca_certs,
