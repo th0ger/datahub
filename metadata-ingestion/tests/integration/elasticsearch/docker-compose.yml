@@ -1,0 +1,18 @@
+---
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.1
+    env_file: elasticsearch.env
+    hostname: test_elasticsearch
+    container_name: test_elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9201:9200"
+    volumes:
+      - test_esdata:/usr/share/elasticsearch/data
+
+volumes:
+  test_esdata:
