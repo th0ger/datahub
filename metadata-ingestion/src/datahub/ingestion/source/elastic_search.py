@@ -335,6 +335,25 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
     def api_key_prefixed(self) -> Optional[Tuple[str, str]]:
         return None if self.api_key is None else ("ApiKey", self.api_key)
 
+
+def get_elasticsearch_client(
+    source_config: ElasticsearchSourceConfig,
+) -> Elasticsearch:
+    return Elasticsearch(
+        source_config.host,
+        http_auth=source_config.http_auth,
+        api_key=source_config.api_key_prefixed,
+        use_ssl=source_config.use_ssl,
+        verify_certs=source_config.verify_certs,
+        ca_certs=source_config.ca_certs,
+        client_cert=source_config.client_cert,
+        client_key=source_config.client_key,
+        ssl_assert_hostname=source_config.ssl_assert_hostname,
+        ssl_assert_fingerprint=source_config.ssl_assert_fingerprint,
+        url_prefix=source_config.url_prefix,
+    )
+
+
 @platform_name("Elasticsearch")
 @config_class(ElasticsearchSourceConfig)
 @support_status(SupportStatus.CERTIFIED)
@@ -350,19 +369,7 @@ class ElasticsearchSource(Source):
     def __init__(self, config: ElasticsearchSourceConfig, ctx: PipelineContext):
         super().__init__(ctx)
         self.source_config = config
-        self.client = Elasticsearch(
-            self.source_config.host,
-            http_auth=self.source_config.http_auth,
-            api_key=self.source_config.api_key_prefixed,
-            use_ssl=self.source_config.use_ssl,
-            verify_certs=self.source_config.verify_certs,
-            ca_certs=self.source_config.ca_certs,
-            client_cert=self.source_config.client_cert,
-            client_key=self.source_config.client_key,
-            ssl_assert_hostname=self.source_config.ssl_assert_hostname,
-            ssl_assert_fingerprint=self.source_config.ssl_assert_fingerprint,
-            url_prefix=self.source_config.url_prefix,
-        )
+        self.client = get_elasticsearch_client(self.source_config)
         self.report = ElasticsearchSourceReport()
         self.data_stream_partition_count: Dict[str, int] = defaultdict(int)
         self.platform: str = "elasticsearch"
