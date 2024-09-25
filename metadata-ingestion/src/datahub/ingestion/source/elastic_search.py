@@ -307,6 +307,9 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
         The main case where you would want to have multiple of these if the name where you are trying to remove suffix from have different formats.
         e.g. ending with -YYYY-MM-DD as well as ending -epochtime would require you to have 2 regex patterns to remove the suffixes across all URNs.""",
     )
+    timeout: Optional[float] = Field(
+        default=None, description="Default timeout in seconds.",
+    )
 
     def is_profiling_enabled(self) -> bool:
         return self.profiling.enabled and is_profiling_enabled(
@@ -354,6 +357,7 @@ class ElasticsearchSource(Source):
             ssl_assert_hostname=self.source_config.ssl_assert_hostname,
             ssl_assert_fingerprint=self.source_config.ssl_assert_fingerprint,
             url_prefix=self.source_config.url_prefix,
+            timeout=self.source_config.timeout,
         )
         self.report = ElasticsearchSourceReport()
         self.data_stream_partition_count: Dict[str, int] = defaultdict(int)
