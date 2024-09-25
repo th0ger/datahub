@@ -317,16 +317,6 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
             self.profiling.operation_config
         )
 
-    @validator("host")
-    def host_colon_port_comma(cls, host_val: str) -> str:
-        for entry in host_val.split(","):
-            entry = remove_protocol(entry)
-            for suffix in ["/"]:
-                if entry.endswith(suffix):
-                    entry = entry[: -len(suffix)]
-            validate_host_port(entry)
-        return host_val
-
     @property
     def http_auth(self) -> Optional[Tuple[str, str]]:
         return None if self.username is None else (self.username, self.password or "")
