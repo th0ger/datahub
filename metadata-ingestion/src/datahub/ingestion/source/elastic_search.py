@@ -32,7 +32,12 @@ from datahub.ingestion.api.decorators import (
     platform_name,
     support_status,
 )
-from datahub.ingestion.api.source import Source, SourceReport
+from datahub.ingestion.api.source import (
+    CapabilityReport,
+    Source,
+    SourceReport,
+    TestConnectionReport,
+)
 from datahub.ingestion.api.workunit import MetadataWorkUnit
 from datahub.ingestion.source.common.subtypes import DatasetSubTypes
 from datahub.ingestion.source_config.operation_config import (
@@ -354,6 +359,43 @@ def get_elasticsearch_client(
     )
 
 
+class ElasticsearchConnectionTest:
+    def __init__(self, config_dict: dict):
+        self.config = ElasticsearchSourceConfig.parse_obj_allow_extras(config_dict)
+        self.report = ElasticsearchSourceReport()
+        self.client: Elasticsearch = get_elasticsearch_client(self.config)
+
+    def get_connection_test(self) -> TestConnectionReport:
+        capability_report = {
+            # SourceCapability.SCHEMA_METADATA: self.schema_registry_connectivity(),
+        }
+        return TestConnectionReport(
+            basic_connectivity=self.basic_connectivity(),
+            capability_report={
+                k: v for k, v in capability_report.items() if v is not None
+            },
+        )
+
+    def basic_connectivity(self) -> CapabilityReport:
+        try:
+            self.client.info()
+            return CapabilityReport(capable=True)
+        except Exception as e:
+            return CapabilityReport(capable=False, failure_reason=str(e))
+
+    # def schema_registry_connectivity(self) -> CapabilityReport:
+    #     try:
+    #         SchemaRegistryClient(
+    #             {
+    #                 "url": self.config.connection.schema_registry_url,
+    #                 **self.config.connection.schema_registry_config,
+    #             }
+    #         ).get_subjects()
+    #         return CapabilityReport(capable=True)
+    #     except Exception as e:
+    #         return CapabilityReport(capable=False, failure_reason=str(e))
+
+
 @platform_name("Elasticsearch")
 @config_class(ElasticsearchSourceConfig)
 @support_status(SupportStatus.CERTIFIED)
@@ -374,6 +416,10 @@ class ElasticsearchSource(Source):
         self.data_stream_partition_count: Dict[str, int] = defaultdict(int)
         self.platform: str = "elasticsearch"
         self.cat_response: Optional[List[Dict[str, Any]]] = None
+
+    @staticmethod
+    def test_connection(config_dict: dict) -> TestConnectionReport:
+        return ElasticsearchConnectionTest(config_dict).get_connection_test()
 
     @classmethod
     def create(
