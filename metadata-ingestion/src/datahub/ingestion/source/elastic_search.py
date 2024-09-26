@@ -312,7 +312,8 @@ class ElasticsearchSourceConfig(PlatformInstanceConfigMixin, EnvConfigMixin):
         e.g. ending with -YYYY-MM-DD as well as ending -epochtime would require you to have 2 regex patterns to remove the suffixes across all URNs.""",
     )
     timeout: Optional[float] = Field(
-        default=None, description="Default timeout in seconds.",
+        default=10,  # Explicitly repeat the 10s urllib3 default. Don't set None here, as it will make urllib3 not timeout by default.
+        description="Default timeout in seconds.",
     )
 
     def is_profiling_enabled(self) -> bool:
